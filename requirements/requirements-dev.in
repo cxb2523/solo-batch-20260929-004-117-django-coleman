@@ -1,0 +1,9 @@
+Django~=5.2
+environs~=14.5
+dj-database-url~=3.0
+django-admin-list-filter-dropdown~=1.0
+django-adminfilters~=2.6
+djangorestframework~=3.16
+django-extensions~=4.1
+django-google-sso~=9.0
+django-health-check~=3.20
