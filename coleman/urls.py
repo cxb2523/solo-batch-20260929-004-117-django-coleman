@@ -29,6 +29,7 @@ router.register(r'tasks', TaskViewSet)
 urlpatterns = [
     re_path('^api/v1/', include(router.urls)),
     re_path(r'^health/', include('health_check.urls')),
+    re_path(r'^mtasks/', include('mtasks.urls')),
 ]
 
 if settings.ADMIN:

@@ -1,0 +1,96 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:mtasks_task_changelist' %}">{% trans 'Tasks' %}</a>
+&rsaquo; <a href="{% url 'admin:mtasks_task_change' task.pk %}">{{ task.number }}</a>
+&rsaquo; {% trans 'Flow diagnostic' %}
+</div>
+{% endblock %}
+
+{% block content %}
+<style>
+  .flow-timeline { list-style: none; margin: 0; padding: 0; }
+  .flow-step { border-left: 3px solid #79aec8; margin: 0 0 0 10px; padding: 0 0 18px 22px; position: relative; }
+  .flow-step::before { content: ""; position: absolute; left: -8px; top: 2px; width: 13px; height: 13px; border-radius: 50%; background: #79aec8; border: 2px solid #fff; box-shadow: 0 0 0 1px #79aec8; }
+  .flow-step h3 { margin: 0 0 4px 0; font-size: 14px; }
+  .flow-meta { color: #666; font-size: 12px; margin-bottom: 6px; }
+  .flow-badge { display: inline-block; border-radius: 10px; padding: 1px 9px; font-size: 11px; font-weight: bold; color: #fff; margin-left: 6px; vertical-align: middle; }
+  .badge-sent { background: #28a745; }
+  .badge-suppressed { background: #c0392b; }
+  .badge-pending { background: #b58900; }
+  .flow-detail { margin-top: 6px; }
+  .flow-detail summary { cursor: pointer; font-size: 12px; color: #447e9b; }
+  .flow-detail pre { background: #f8f8f8; border: 1px solid #eee; padding: 8px; overflow-x: auto; font-size: 12px; }
+  .source-tag { display: inline-block; background: #e8f0f7; border: 1px solid #c8d9e8; border-radius: 3px; padding: 1px 7px; font-size: 11px; margin: 2px 4px 2px 0; font-family: monospace; }
+  .allow-table { border-collapse: collapse; margin-top: 8px; }
+  .allow-table th, .allow-table td { border: 1px solid #ddd; padding: 5px 10px; font-size: 12px; text-align: left; }
+  .allow-table th { background: #f2f8fc; }
+</style>
+
+<h1>{% blocktrans with number=task.number title=task.title %}Task #{{ number }} flow — {{ title }}{% endblocktrans %}</h1>
+<p>
+  <a href="{% url 'admin:mtasks_task_change' task.pk %}">{% trans 'Edit task' %}</a>
+</p>
+
+<h2>{% trans 'Timeline' %}</h2>
+{% if events %}
+<ul class="flow-timeline">
+  {% for event in events %}
+  <li class="flow-step">
+    <h3>
+      {{ event.kind_label }}
+      {% if event.kind == 'state_changed' %}
+        <span>{{ event.state_label }}</span>
+      {% elif event.to_state %}
+        <span>{{ event.to_state }}</span>
+      {% endif %}
+      {% if event.notification_status == 'sent' %}
+        <span class="flow-badge badge-sent" title="{{ event.notification_subject }} → {{ event.notification_recipients|join:', ' }}">{% trans 'notification: sent' %}</span>
+      {% elif event.notification_status == 'suppressed' %}
+        <span class="flow-badge badge-suppressed" title="{{ event.notification_reason }}">{% trans 'notification: suppressed' %}</span>
+      {% else %}
+        <span class="flow-badge badge-pending">{% trans 'notification: pending' %}</span>
+      {% endif %}
+    </h3>
+    <div class="flow-meta">{{ event.created_at|date:"Y-m-d H:i:s.u" }}</div>
+
+    <details class="flow-detail">
+      <summary>{% trans 'Raw fields & validation source' %}</summary>
+      <p>
+        <strong>{% trans 'Validated by:' %}</strong><br>
+        {% for source in event.validation_sources %}
+          <span class="source-tag">{{ source }}</span>
+        {% empty %}
+          <span class="source-tag">models.py: Task.clean (cross-field rules)</span>
+        {% endfor %}
+      </p>
+      <p><strong>{% trans 'Idempotency key:' %}</strong> <code>{{ event.idem_key }}</code></p>
+      <p><strong>{% trans 'Raw fields at this step:' %}</strong></p>
+      <pre>{{ event.field_snapshot|pprint }}</pre>
+      {% if event.notification_reason %}
+        <p><strong>{% trans 'Notification note:' %}</strong> {{ event.notification_reason }}</p>
+      {% endif %}
+      {% if event.notification_recipients %}
+        <p><strong>{% trans 'Recipients:' %}</strong> {{ event.notification_recipients|join:', ' }}</p>
+      {% endif %}
+    </details>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p>{% trans 'No flow events recorded for this task yet.' %}</p>
+{% endif %}
+
+<h2>{% trans 'Allowed state transitions' %}</h2>
+<table class="allow-table">
+  <thead><tr><th>{% trans 'From' %}</th><th>{% trans 'Allowed to' %}</th></tr></thead>
+  <tbody>
+  {% for row in allow_table %}
+    <tr><td>{{ row.from }}</td><td>{{ row.allowed_to|join:", " }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

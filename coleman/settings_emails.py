@@ -69,3 +69,23 @@ Replies will not be read.
 ---
 {sign}
 '''
+
+
+MTASKS_EMAIL_STATE_CHANGE = '''\
+Task #{id} state changed.
+
+Title:
+{title}
+
+State:
+{from_state} -> {to_state}
+
+Assigned:
+{user}
+
+Please note: Do NOT reply to this email. This email is sent from an unattended mailbox.
+Replies will not be read.
+
+---
+{sign}
+'''
